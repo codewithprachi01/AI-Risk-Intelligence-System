@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>AI Multi-Risk Intelligence Dashboard</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+body{
+    font-family: Arial, sans-serif;
+    background:#f4f6f9;
+    margin:30px;
+}
+
+
+h1{
+    color:#111827;
+}
+
+
+.cards{
+
+    display:flex;
+    gap:20px;
+    flex-wrap:wrap;
+
+}
+
+
+
+.card{
+
+    background:white;
+    padding:20px;
+    width:220px;
+    border-radius:15px;
+    box-shadow:0 5px 15px #ccc;
+
+}
+
+
+
+.number{
+
+    font-size:35px;
+    font-weight:bold;
+
+}
+
+
+
+.high{
+    color:red;
+}
+
+
+.medium{
+    color:orange;
+}
+
+
+.low{
+    color:green;
+}
+
+
+
+.box{
+
+    background:white;
+    margin-top:30px;
+    padding:25px;
+    border-radius:15px;
+    box-shadow:0 5px 15px #ccc;
+
+}
+
+
+
+.chart-box{
+
+    display:flex;
+    gap:40px;
+    flex-wrap:wrap;
+
+}
+
+
+
+canvas{
+
+    max-width:450px;
+
+}
+
+
+
+
+.risk-grid{
+
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+    gap:15px;
+
+}
+
+
+
+.risk{
+
+    background:#f8fafc;
+    padding:15px;
+    border-radius:12px;
+    box-shadow:0 3px 8px #ddd;
+
+}
+
+
+
+
+table{
+
+    width:100%;
+    border-collapse:collapse;
+
+}
+
+
+
+th{
+
+    background:#111827;
+    color:white;
+
+}
+
+
+
+td,th{
+
+    padding:12px;
+    border:1px solid #ddd;
+    text-align:center;
+
+}
+
+
+</style>
+
+
+</head>
+
+
+<body>
+
+
+
+<h1>
+🤖 AI Multi-Risk Intelligence System
+</h1>
+
+
+<h3>
+Risk Detection and Analysis Dashboard
+</h3>
+
+
+
+<div class="cards">
+
+
+<div class="card">
+
+<h3>Total Predictions</h3>
+
+<div class="number">
+{{ reports|length }}
+</div>
+
+</div>
+
+
+
+
+<div class="card">
+
+<h3>High Risk</h3>
+
+<div class="number high">
+{{ high }}
+</div>
+
+</div>
+
+
+
+
+<div class="card">
+
+<h3>Medium Risk</h3>
+
+<div class="number medium">
+{{ medium }}
+</div>
+
+</div>
+
+
+
+
+<div class="card">
+
+<h3>Low Risk</h3>
+
+<div class="number low">
+{{ low }}
+</div>
+
+</div>
+
+
+</div>
+
+
+
+
+
+
+<div class="box">
+
+
+<h2>
+📊 Risk Charts
+</h2>
+
+
+<div class="chart-box">
+
+
+<canvas id="pieChart"></canvas>
+
+
+<canvas id="barChart"></canvas>
+
+
+</div>
+
+
+</div>
+
+
+
+
+
+
+
+
+<div class="box">
+
+
+<h2>
+15 Risk Categories
+</h2>
+
+
+
+<div class="risk-grid">
+
+
+{% for name,count in categories.items() %}
+
+
+<div class="risk">
+
+
+<h4>
+{{name}}
+</h4>
+
+
+<p>
+Count : {{count}}
+</p>
+
+
+</div>
+
+
+{% endfor %}
+
+
+
+</div>
+
+
+</div>
+
+
+
+
+
+
+
+
+<div class="box">
+
+
+<h2>
+Risk History
+</h2>
+
+
+
+<table>
+
+
+<tr>
+
+<th>Date</th>
+
+<th>Risk Type</th>
+
+<th>Score</th>
+
+<th>Status</th>
+
+<th>Recommendation</th>
+
+
+</tr>
+
+
+
+
+{% for r in reports %}
+
+
+<tr>
+
+
+<td>
+
+{{ r.analysis_date }}
+
+</td>
+
+
+
+<td>
+
+{{ r.input_data }}
+
+</td>
+
+
+
+<td>
+
+{{ r.risk_score }} %
+
+</td>
+
+
+
+<td>
+
+{{ r.risk_level }}
+
+</td>
+
+
+
+<td>
+
+{{ r.recommendation }}
+
+</td>
+
+
+
+</tr>
+
+
+{% endfor %}
+
+
+
+</table>
+
+
+</div>
+
+
+
+
+
+
+
+<script>
+
+const rawData = JSON.parse(
+    '{{ categories | tojson | safe }}'
+);
+
+
+const labels = Object.keys(rawData);
+
+const values = Object.values(rawData);
+
+
+
+new Chart(
+document.getElementById("pieChart"),
+{
+    type:"pie",
+
+    data:{
+        labels:labels,
+
+        datasets:[{
+            label:"Risk Count",
+            data:values
+        }]
+    }
+}
+);
+
+
+
+new Chart(
+document.getElementById("barChart"),
+{
+    type:"bar",
+
+    data:{
+        labels:labels,
+
+        datasets:[{
+            label:"Risk Count",
+            data:values
+        }]
+    }
+}
+);
+
+
+</script>
+
+
+
+
+
+</body>
+
+</html>
