@@ -60,24 +60,26 @@ function Login(){
 
 
 
-            // Save JWT Token
+             // Save JWT Token
 
-            localStorage.setItem(
+localStorage.setItem(
+    "token",
+    response.data.token
+);
 
-                "token",
+// Save User Email
 
-                response.data.token
+localStorage.setItem(
+    "userEmail",
+    formData.email
+);
+console.log(
+    "Saved Email:",
+    localStorage.getItem("userEmail")
+);
+alert("Login successful");
 
-            );
-
-
-
-            alert("Login successful");
-
-
-
-            navigate("/dashboard");
-
+navigate("/dashboard");
 
         }
 

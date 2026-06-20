@@ -47,6 +47,11 @@ const [data,setData] = useState({
 
 useEffect(()=>{
 
+console.log(
+"Dashboard Email:",
+localStorage.getItem("userEmail")
+);
+
 fetchDashboard();
 
 },[]);

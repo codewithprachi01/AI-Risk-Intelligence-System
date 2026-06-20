@@ -198,12 +198,14 @@ try{
 setLoading(true);
 
 
+const userEmail = localStorage.getItem("userEmail");
+
 const response = await API.post(
-
-"/predict",
-
-formData
-
+    "/predict",
+    {
+        ...formData,
+        email: userEmail
+    }
 );
 
 
