@@ -1,3 +1,4 @@
+
 from flask import Flask, request, jsonify, send_file
 
 from services.risk_explanation import explain_risk
@@ -30,7 +31,17 @@ CORS(app)
 # DATABASE CONFIGURATION - RENDER POSTGRESQL
 # ============================================================
 
-app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
+DATABASE_URL = os.getenv("SQLALCHEMY_DATABASE_URI")
+
+# Render/PostgreSQL compatibility
+if DATABASE_URL and DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = DATABASE_URL.replace(
+        "postgresql://",
+        "postgresql+psycopg2://",
+        1
+    )
+
+app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
 
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
@@ -76,13 +87,15 @@ def google_login():
 
         token = data["token"]
 
+        client_id = os.getenv(
+            "GOOGLE_CLIENT_ID",
+            "376747902629-5nf2fkl9p3im2hd6a6f9kekdll55o43c.apps.googleusercontent.com"
+        )
+
         user_info = id_token.verify_oauth2_token(
             token,
             Request(),
-            os.getenv(
-                "GOOGLE_CLIENT_ID",
-                "376747902629-5nf2fkl9p3im2hd6a6f9kekdll55o43c.apps.googleusercontent.com"
-            ),
+            client_id,
             clock_skew_in_seconds=30
         )
 
@@ -187,17 +200,11 @@ def dashboard_data():
 
             {
                 "date": r.analysis_date.strftime("%d-%m-%Y"),
-
                 "risk": r.input_data,
-
                 "score": r.risk_score,
-
                 "status": r.risk_level,
-
                 "explanation": r.ai_explanation,
-
                 "recommendation": r.recommendation
-
             }
 
             for r in reports
@@ -218,14 +225,30 @@ def weather_data():
 
     API_KEY = os.getenv("OPENWEATHER_API_KEY")
 
+    if not API_KEY:
+        return jsonify({
+            "error": "OpenWeather API key is not configured"
+        }), 500
+
     url = (
-        f"https://api.openweathermap.org/data/2.5/weather"
+        "https://api.openweathermap.org/data/2.5/weather"
         f"?q={city}&appid={API_KEY}&units=metric"
     )
 
-    response = requests.get(url)
+    try:
 
-    data = response.json()
+        response = requests.get(
+            url,
+            timeout=15
+        )
+
+        data = response.json()
+
+    except Exception as e:
+
+        return jsonify({
+            "error": str(e)
+        }), 500
 
     if data.get("cod") != 200:
 
@@ -254,11 +277,8 @@ def weather_data():
         suggestions = [
 
             "Drink enough water",
-
             "Avoid outdoor activity during afternoon",
-
             "Wear light clothes",
-
             "Stay in shaded areas"
 
         ]
@@ -272,9 +292,7 @@ def weather_data():
         suggestions = [
 
             "Stay hydrated",
-
             "Avoid long exposure to sunlight",
-
             "Take regular breaks"
 
         ]
@@ -288,7 +306,6 @@ def weather_data():
         suggestions = [
 
             "Normal outdoor activity is safe",
-
             "Maintain regular hydration"
 
         ]
@@ -297,17 +314,11 @@ def weather_data():
     return jsonify({
 
         "city": data["name"],
-
         "temperature": temperature,
-
         "humidity": humidity,
-
         "condition": data["weather"][0]["description"],
-
         "heat_level": heat_level,
-
         "warning": warning,
-
         "suggestions": suggestions
 
     })
@@ -322,6 +333,11 @@ def news_data():
 
     API_KEY = os.getenv("NEWS_API_KEY")
 
+    if not API_KEY:
+        return jsonify({
+            "error": "News API key is not configured"
+        }), 500
+
     url = (
         "https://newsapi.org/v2/everything?"
         "q=fraud OR cyber OR finance OR market OR security"
@@ -330,9 +346,20 @@ def news_data():
         f"&apiKey={API_KEY}"
     )
 
-    response = requests.get(url)
+    try:
 
-    data = response.json()
+        response = requests.get(
+            url,
+            timeout=15
+        )
+
+        data = response.json()
+
+    except Exception as e:
+
+        return jsonify({
+            "error": str(e)
+        }), 500
 
     news_list = []
 
@@ -369,11 +396,8 @@ def news_data():
             news_list.append({
 
                 "title": title,
-
                 "description": description,
-
                 "source": article["source"]["name"],
-
                 "risk": risk
 
             })
@@ -393,11 +417,8 @@ def news_data():
 def download():
 
     return send_file(
-
         "reports/Risk_Report.pdf",
-
         as_attachment=True
-
     )
 
 
@@ -408,7 +429,7 @@ def download():
 @app.route("/predict", methods=["POST"])
 def predict():
 
-    data = request.json
+    data = request.json or {}
 
     user_email = data.get("email")
 
@@ -417,6 +438,12 @@ def predict():
     results = analyze_risk(data)
 
     print("RESULT:", results)
+
+    if not results:
+
+        return jsonify({
+            "error": "No risk result generated"
+        }), 400
 
 
     # ========================================================
@@ -562,7 +589,7 @@ def chat():
 
     try:
 
-        data = request.json
+        data = request.json or {}
 
         message = data.get("message")
 
@@ -574,16 +601,13 @@ def chat():
 
             }), 400
 
-
         response = ask_bot(message)
-
 
         return jsonify({
 
             "reply": response
 
         })
-
 
     except Exception as e:
 
@@ -613,7 +637,6 @@ def upload_risk():
 
         }), 400
 
-
     try:
 
         if file.filename.endswith(".csv"):
@@ -635,9 +658,7 @@ def upload_risk():
 
             }), 400
 
-
         all_results = []
-
 
         for index, row in df.iterrows():
 
@@ -647,7 +668,6 @@ def upload_risk():
 
             all_results.extend(result)
 
-
         return jsonify({
 
             "total_records": len(df),
@@ -655,7 +675,6 @@ def upload_risk():
             "results": all_results
 
         })
-
 
     except Exception as e:
 
@@ -667,7 +686,7 @@ def upload_risk():
 
 
 # ============================================================
-# SAVE MYSQL/POSTGRES DATABASE
+# SAVE DATABASE
 # ============================================================
 
 def save_analysis(risk_type, report):
@@ -706,6 +725,22 @@ def save_analysis(risk_type, report):
 
 
 # ============================================================
+# HEALTH CHECK
+# ============================================================
+
+@app.route("/", methods=["GET"])
+def home():
+
+    return jsonify({
+
+        "status": "online",
+
+        "message": "AI Risk Intelligence System backend is running"
+
+    })
+
+
+# ============================================================
 # RUN
 # ============================================================
 
@@ -724,3 +759,4 @@ if __name__ == "__main__":
         debug=False
 
     )
+
