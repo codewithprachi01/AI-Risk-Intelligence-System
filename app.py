@@ -4,12 +4,18 @@ from database.db import db, RiskHistory, Report
 from services.risk_analyzer import analyze_risk
 from reports.generator import generate_pdf
 from chatbot.assistant import ask_bot
-from flask_jwt_extended import JWTManager
+
+from flask_jwt_extended import JWTManager, create_access_token
 from flask_bcrypt import Bcrypt
 from flask_cors import CORS
+
 from auth.routes import auth
+from services.email_alert import send_email_alert
+
 import requests
 
+from google.oauth2 import id_token
+from google.auth.transport.requests import Request
 
 app = Flask(__name__)
 
@@ -55,36 +61,47 @@ with app.app_context():
 # HOME PAGE
 # =========================
 
-@app.route("/")
-def home():
+@app.post("/google-login")
+def google_login():
 
-    return render_template("index.html")
+    try:
+
+        data = request.json
+
+        print("GOOGLE DATA RECEIVED:", data)
+
+        token = data["token"]
+
+        user_info = id_token.verify_oauth2_token(
+    token,
+    Request(),
+    "297274202047-jqbhhtcnnhtbo71tp35pq4qso8gkuse2.apps.googleusercontent.com",
+    clock_skew_in_seconds=30
+)
+
+        email = user_info["email"]
+
+        access_token = create_access_token(
+            identity=email
+        )
+
+        return jsonify({
+
+            "token": access_token,
+            "email": email
+
+        })
 
 
+    except Exception as e:
 
+        print("GOOGLE LOGIN ERROR:", str(e))
 
+        return jsonify({
 
+            "error": str(e)
 
-# =========================
-# CHATBOT
-# =========================
-
-@app.route("/chat", methods=["POST"])
-def chat():
-
-    data = request.json
-
-    question = data.get("message")
-
-
-    answer = ask_bot(question)
-
-
-    return jsonify({
-
-        "answer": answer
-
-    })
+        }),400
 
 
 
@@ -449,7 +466,8 @@ def download():
 def predict():
 
     data = request.json
-
+    user_email = data.get("email")
+    print("USER EMAIL:", user_email)
 
     results = analyze_risk(data)
 
@@ -485,26 +503,44 @@ def predict():
 
     for risk in results:
 
-
         save_analysis(
 
-    risk["risk_type"],
+        risk["risk_type"],
 
-    {
+        {
+            "risk_score": risk["score"],
 
-        "risk_score": risk["score"],
+            "severity": risk["status"],
 
-        "severity": risk["status"],
+            "recommendation":
+            "Monitor and take preventive action",
 
-        "recommendation":
-        "Monitor and take preventive action",
+            "explanation":
+            str(risk.get(
+                "explanation",
+                "AI detected risk pattern"
+            ))
+        }
 
-        "explanation":
-str(risk.get("explanation","AI detected risk pattern"))
-    }
+    )
 
-)
 
+    # EMAIL ALERT FOR HIGH RISK
+
+        if risk["status"].upper() == "HIGH":
+              data = request.json
+              user_email = data.get("email")
+              print("EMAIL RECEIVED:", user_email)
+              print("HIGH RISK DETECTED")
+
+              if user_email:
+
+                print("Sending email to:", user_email)
+
+                send_email_alert(
+            user_email,
+            risk["status"]
+        )
 
 
 
@@ -578,7 +614,40 @@ str(risk.get("explanation","AI detected risk pattern"))
 
 
     })
+# =========================
+# AI CHAT ASSISTANT
+# =========================
 
+@app.route("/chat", methods=["POST"])
+def chat():
+
+    try:
+
+        data = request.json
+
+        message = data.get("message")
+
+        if not message:
+            return jsonify({
+                "reply": "Please enter a message"
+            }),400
+
+
+        response = ask_bot(message)
+
+
+        return jsonify({
+            "reply": response
+        })
+
+
+    except Exception as e:
+
+        print("CHAT ERROR:", e)
+
+        return jsonify({
+            "reply": "Unable to process your request"
+        }),500
 # =========================
 # UPLOAD CSV / EXCEL RISK ANALYSIS
 # =========================

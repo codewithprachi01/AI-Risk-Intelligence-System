@@ -227,14 +227,16 @@ onSuccess={async (credentialResponse)=>{
     }
     catch(error){
 
-        console.log(
-            "Google Login Error:",
-            error
-        );
+    console.log("Google Login Error:", error);
 
-        alert("Google Login Failed");
+    alert(
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        error.message ||
+        "Google Login Failed"
+    );
 
-    }
+}
 
 }}
 

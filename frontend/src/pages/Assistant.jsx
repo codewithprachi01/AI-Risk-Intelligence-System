@@ -56,7 +56,7 @@ setChat(prev=>[
 ...prev,
 {
 type:"bot",
-text:response.data.answer
+text:response.data.reply
 }
 ]);
 
@@ -228,6 +228,7 @@ mt-5
 "
 
 >
+
 
 
 <input
