@@ -75,7 +75,7 @@ def google_login():
         user_info = id_token.verify_oauth2_token(
     token,
     Request(),
-    "297274202047-jqbhhtcnnhtbo71tp35pq4qso8gkuse2.apps.googleusercontent.com",
+    "376747902629-5nf2fkl9p3im2hd6a6f9kekdll55o43c.apps.googleusercontent.com",
     clock_skew_in_seconds=30
 )
 
