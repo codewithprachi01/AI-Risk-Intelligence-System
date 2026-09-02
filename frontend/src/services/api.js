@@ -3,7 +3,7 @@ import axios from "axios";
 
 const API = axios.create({
 
-    baseURL:"https://ai-risk-intelligence-system.onrender.com"
+    baseURL:"http://127.0.0.1:5000"
 
 });
 
